@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Stop if there is any  error
+set -eu
+
+TIMEZONE="Europe/Warsaw"
+KEYMAP="us"
+LANGUAGE='en_US.UTF-8'
+COUNTRY="country=PL&country=DE"
+
+USERNAME="root"
+PASSWORD="packer"
+HOSTNAME="arch"
+
+echo $PASSWORD | passwd $USERNAME
+
+# Check if there is internet connection
+ping -q -c 1 archlinux.org >/dev/null || { echo "No Internet Connection!; "exit 1; }
+
+# Set timezone
+timedatectl set-timezone $TIMEZONE
+
+echo ">>>> install: Setting pacman ${COUNTRY} mirrors..."
+curl -s "https://archlinux.org/mirrorlist/?${COUNTRY}&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' | rankmirrors -n 5 - > /etc/pacman.d/mirrorlist
+
+sgdisk -g /dev/sda

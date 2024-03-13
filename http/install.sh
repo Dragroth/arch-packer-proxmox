@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
-# Stop if there is any  error
+# Stop on ERROR
 set -eu
 
-TIMEZONE="Europe/Warsaw"
+TIMEZONE=$4
 KEYMAP="us"
 LANGUAGE='en_US.UTF-8'
-COUNTRY="country=PL"
+COUNTRY=$5
 
 USERNAME="root"
-PASSWORD="packer"
-HOSTNAME="arch"
+PASSWORD=$1
+HOSTNAME=$2
 
-# echo $USERNAME:$PASSWORD | chpasswd
+SWAP_SIZE=$6
 
 # Check if there is internet connection
 ping -q -c 1 archlinux.org >/dev/null || { echo "No Internet Connection!; "exit 1; }
@@ -46,8 +46,6 @@ mkfs.ext4 /dev/vg0/lv-root
 mount /dev/vg0/lv-root /mnt
 mount --mkdir /dev/sda1 /mnt/boot
 swapon /dev/vg0/lv-swap
-
-# pacman -Sy archlinux-keyring
 
 pacstrap -K /mnt base linux linux-firmware
 

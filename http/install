@@ -49,9 +49,21 @@ swapon /dev/vg0/lv-swap
 
 pacstrap -K /mnt base linux linux-firmware
 
-/usr/bin/arch-chroot /mnt pacman -S --noconfirm gptfdisk openssh syslinux networkmanager intel-ucode vim lvm2 cloud-guest-utils
+/usr/bin/arch-chroot /mnt pacman -S --noconfirm gptfdisk openssh syslinux networkmanager intel-ucode vim lvm2 cloud-guest-utils cloud-init
 
 /usr/bin/arch-chroot /mnt bootctl install
+
+# configure mkinitcpio
+sed -i '/^HOOKS/s/\(block \)\(.*filesystems\)/\1encrypt lvm2 \2/' /mnt/etc/mkinitcpio.conf
+
+# generate initramfs for linux and linux-lts
+/usr/bin/arch-chroot /mnt mkinitcpio -p linux
+# /usr/bin/arch-chroot /mnt mkinitcpio -p linux-lts
+
+/usr/bin/arch-chroot /mnt passwd
+
+/usr/bin/arch-chroot /mnt systemctl enable cloud-init
+/usr/bin/arch-chroot /mnt systemctl enable NetworkManager
 
 genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -67,3 +79,4 @@ echo "linux   /vmlinuz-linux" >> "$FILE"
 echo "initrd  /intel-ucode.img" >> "$FILE"
 echo "initrd  /initramfs-linux.img" >> "$FILE"
 echo "options root=/dev/vg0/lv-root rw" >> "$FILE"
+

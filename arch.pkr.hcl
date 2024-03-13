@@ -32,16 +32,16 @@ variable "iso_file" {
   type    = string
   default = "local:iso/archlinux-2024.03.01-x86_64.iso"
 }
+ 
+# variable "iso_url" {
+#   type    = string
+#   default = "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.5.0-amd64-netinst.iso"
+# }
 
-// variable "iso_url" {
-//   type    = string
-//   default = "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.5.0-amd64-netinst.iso"
-// }
-
-// variable "iso_checksum" {
-//   type    = string
-//   default = "013f5b44670d81280b5b1bc02455842b250df2f0c6763398feb69af1a805a14f"
-// }
+variable "iso_checksum" {
+  type    = string
+  default = "0062e39e57d492672712467fdb14371fca4e3a5c57fed06791be95da8d4a60e3"
+}
 
 variable "cloudinit_storage_pool" {
   type    = string
@@ -73,7 +73,7 @@ variable "bridge_name" {
   default = "vmbr100"
 }
 
-source "proxmox-iso" "debian-12" {
+source "proxmox-iso" "arch" {
 
   # Proxmox Connection Settings
   proxmox_url               = var.proxmox_api_url
@@ -84,15 +84,19 @@ source "proxmox-iso" "debian-12" {
   # VM General Settings
   node                  = var.proxmox_node
   vm_id                 = var.vm_id
-  vm_name               = "debian-12"
+  vm_name               = "arch"
   template_description  = "Built from ${basename(var.iso_file)} on ${formatdate("YYYY-MM-DD hh:mm:ss ZZZ", timestamp())}"
   cores                 = "2"
   memory                = "2048"
   cpu_type              = "host"
   qemu_agent            = true
+  bios                  = "ovmf"
+  efi_config {
+    efi_storage_pool    = "local-lvm"
+  }
 
   # ISO file
-  iso_url               = var.iso_url
+  iso_file              = var.iso_file
   iso_checksum          = var.iso_checksum
   iso_storage_pool      = "local"
   unmount_iso           = true
@@ -117,13 +121,12 @@ source "proxmox-iso" "debian-12" {
   cloud_init_storage_pool = var.cloudinit_storage_pool
 
   # PACKER Boot Commands
-//   boot_command    = [
-//     "<down><down><down><down>",
-//     "<wait><enter>",
-//     "<wait>auto url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg<enter>"
-//   ]
+  boot_command    = [
+    "<enter><wait33s>",
+    "bash <(curl -s http://{{ .HTTPIP }}:{{ .HTTPPort }}/install.sh)<enter>"
+  ]
   boot            = "c"
-  boot_wait       = "5s"
+  boot_wait       = "6s"
 
   # PACKER Autoinstall Settings
   http_directory  = "http" 
@@ -138,8 +141,8 @@ source "proxmox-iso" "debian-12" {
 }
 
 build {
-  name    = "debian-12"
-  sources = ["source.proxmox-iso.debian-12"]
+  name    = "arch"
+  sources = ["source.proxmox-iso.arch"]
 
   provisioner "shell" {
     inline = [
@@ -147,10 +150,8 @@ build {
       "sudo rm -f /etc/machine-id /var/lib/dbus/machine-id",
       "sudo dbus-uuidgen --ensure=/etc/machine-id",
       "sudo dbus-uuidgen --ensure",
-      "sudo apt -y autoremove --purge",
-      "sudo apt -y clean",
-      "sudo apt -y autoclean",
       "sudo cloud-init clean",
+      "/usr/bin/pacman -Scc --noconfirm",
       "sudo sync"
     ]
   }

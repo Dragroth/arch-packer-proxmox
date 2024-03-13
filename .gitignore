@@ -11,6 +11,14 @@ crash.log
 # subject to change depending on the environment.
 #
 *.pkrvars.hcl
+credentials.pkr.hcl
+**/*.auto.pkrvars.hcl
+credentials.auto.pkrvars.hcl
+packer-*.log
+packer_cache/
+*.iso
+*.box
+*.ova
 
 # For built boxes
 *.box

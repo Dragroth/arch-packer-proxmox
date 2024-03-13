@@ -5,5 +5,5 @@ I wanted to create base Arch image which could be used as a developer server. Th
 ## Usage
 1. Clone the repository
 2. Create credentials file based on the template
-3. Change variables in [variables.pkvars.hcl](variables.pkvars.hcl]).
+3. Change variables in variables.pkvars.hcl.
 4. Run `packer build .`

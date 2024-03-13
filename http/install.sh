@@ -3,16 +3,19 @@
 # Stop on ERROR
 set -eu
 
+USERNAME="root"
+PASSWORD=$1
+HOSTNAME=arch
+
+SWAP_SIZE=$2
+
+COUNTRY=$3
 TIMEZONE=$4
 KEYMAP="us"
 LANGUAGE='en_US.UTF-8'
-COUNTRY=$5
 
-USERNAME="root"
-PASSWORD=$1
-HOSTNAME=$2
 
-SWAP_SIZE=$6
+
 
 # Check if there is internet connection
 ping -q -c 1 archlinux.org >/dev/null || { echo "No Internet Connection!; "exit 1; }

@@ -85,7 +85,17 @@ variable "memory" {
 
 variable "disk_size" {
 	type = string
-	default = "10G"
+	default = "30G"
+}
+
+variable "swap_size" {
+	type = string
+	default = "4G"
+}
+
+variable "country" {
+	type = string
+	default = "country=US"
 }
 
 source "proxmox-iso" "arch" {
@@ -138,7 +148,7 @@ source "proxmox-iso" "arch" {
 	# PACKER Boot Commands
 	boot_command = [
 		"<enter><wait40s>",
-		"bash <(curl -s http://{{ .HTTPIP }}:{{ .HTTPPort }}/install.sh)<enter>"
+		"bash <(curl -s http://{{ .HTTPIP }}:{{ .HTTPPort }}/install.sh packer ${var.country} ${var.swap_size} ${var.country} ${var.flavor} ${var.flavor})<enter>"
 	]
 	boot = "c"
 	boot_wait = "8s"

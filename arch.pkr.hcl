@@ -98,6 +98,21 @@ variable "country" {
 	default = "country=US"
 }
 
+variable "timezone" {
+	type = string
+	default = "America/Los_Angeles"
+}
+
+variable "language" {
+	type = string
+	default = "en_US.UTF-8"
+}
+
+variable "optional_packages" {
+	type = string
+	default = "vim"
+}
+
 source "proxmox-iso" "arch" {
 
 	# Proxmox Connection Settings
@@ -148,7 +163,7 @@ source "proxmox-iso" "arch" {
 	# PACKER Boot Commands
 	boot_command = [
 		"<enter><wait40s>",
-		"bash <(curl -s http://{{ .HTTPIP }}:{{ .HTTPPort }}/install.sh packer ${var.country} ${var.swap_size} ${var.country} ${var.flavor} ${var.flavor})<enter>"
+		"curl -sSl http://{{ .HTTPIP }}:{{ .HTTPPort }}/install.sh | bash -s -- 'packer' '${var.swap_size}' '${var.country}' '${var.timezone}' '${var.language}'  '${var.optional_packages}'<enter>"
 	]
 	boot = "c"
 	boot_wait = "8s"
@@ -166,13 +181,14 @@ build {
 
 	provisioner "shell" {
 		inline = [
-			"sudo rm /etc/ssh/ssh_host_*",
-			"sudo rm -f /etc/machine-id /var/lib/dbus/machine-id",
-			"sudo dbus-uuidgen --ensure=/etc/machine-id",
-			"sudo dbus-uuidgen --ensure",
-			"sudo cloud-init clean",
+			"rm /etc/ssh/ssh_host_*",
+			"rm -f /etc/machine-id /var/lib/dbus/machine-id",
+			"dbus-uuidgen --ensure=/etc/machine-id",
+			"dbus-uuidgen --ensure",
+			"timedatectl set-timezone ${var.timezone}",
+			"cloud-init clean",
 			"/usr/bin/pacman -Scc --noconfirm",
-			"sudo sync"
+			"sync"
 		]
 	}
 

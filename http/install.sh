@@ -11,78 +11,76 @@ SWAP_SIZE=$2
 
 COUNTRY=$3
 TIMEZONE=$4
-KEYMAP="us"
-LANGUAGE='en_US.UTF-8'
+LANGUAGE=$5
+OPTIONAL_PACKAGES=$6
 
-
-
-
-# Check if there is internet connection
+echo ">>>> CHECKING INTERNET CONNECTION..."
 ping -q -c 1 archlinux.org >/dev/null || { echo "No Internet Connection!; "exit 1; }
 
-# Set timezone
+echo ">>>> SETTING TIMEZONE TO ${TIMEZONE}"
 timedatectl set-timezone $TIMEZONE
 
-echo ">>>> install: Setting pacman ${COUNTRY} mirrors..."
-# pacman-key --init
-# pacman -Sy pacman-contrib --noconfirm
-curl -s "https://archlinux.org/mirrorlist/?${COUNTRY}&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' > /etc/pacman.d/mirrorlist #| rankmirrors -n 5 -
+echo ">>>> SETTING TEMPORARY PACMAN MIRRORS TO ${COUNTRY}..."
+curl -s "https://archlinux.org/mirrorlist/?${COUNTRY}&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' > /etc/pacman.d/mirrorlist
 
-
+echo ">>>> FORMATTING DRIVE..."
 sgdisk -g /dev/sda
-
-/usr/bin/sgdisk --new=1:0:+400M /dev/sda
-/usr/bin/sgdisk --typecode=1:ef00 /dev/sda
+/usr/bin/sgdisk --new=1:0:+400M --typecode=1:ef00 --new=2:0:0 --typecode=2:8e00 /dev/sda
 mkfs.fat -F 32 /dev/sda1
-
-/usr/bin/sgdisk --new=2:0:0 /dev/sda
-/usr/bin/sgdisk --typecode=2:8e00 /dev/sda
-
 pvcreate /dev/sda2
 vgcreate vg0 /dev/sda2
 lvcreate -L 2G -n lv-swap vg0
 lvcreate -l 100%FREE -n lv-root vg0
-
 mkswap /dev/vg0/lv-swap
 mkfs.ext4 /dev/vg0/lv-root
 
+echo ">>>> MOUNTING PARTITIONS..."
 mount /dev/vg0/lv-root /mnt
 mount --mkdir /dev/sda1 /mnt/boot
 swapon /dev/vg0/lv-swap
 
+echo ">>>> INSTALLING ARCH..."
 pacstrap -K /mnt base linux linux-firmware
 
-/usr/bin/arch-chroot /mnt pacman -S --noconfirm gptfdisk openssh syslinux networkmanager intel-ucode vim lvm2 cloud-guest-utils cloud-init qemu-guest-agent less
+echo "#### INSTALLING ADDITIONAL PACKAGES..."
+/usr/bin/arch-chroot /mnt pacman -S --noconfirm lvm2 cloud-guest-utils cloud-init openssh networkmanager qemu-guest-agent gptfdisk syslinux pacman-contrib $OPTIONAL_PACKAGES
 
-/usr/bin/arch-chroot /mnt bootctl install
+echo ">>>> SETTING LOCALE..."
+/usr/bin/arch-chroot /mnt locale-gen
+/usr/bin/arch-chroot /mnt echo "LANG=${LANGUAGE}" > /etc/locale.conf
+echo $HOSTNAME > /mnt/etc/hostname
 
-# configure mkinitcpio
+echo ">>>> MODYFING MKINITCPIO..." 
 /usr/bin/arch-chroot /mnt sed -i '/^HOOKS/s/\(block \)\(.*filesystems\)/\1encrypt lvm2 \2/' /etc/mkinitcpio.conf
-
-# generate initramfs for linux and linux-lts
 /usr/bin/arch-chroot /mnt mkinitcpio -p linux
 
+echo ">>>> ENABLING SERVICES..."
 /usr/bin/arch-chroot /mnt systemctl enable cloud-init
 /usr/bin/arch-chroot /mnt systemctl enable NetworkManager
 /usr/bin/arch-chroot /mnt systemctl enable sshd
 
+echo ">>>> ALLOWING TEMPORARY ROOT LOGIN..."
 /usr/bin/arch-chroot /mnt sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 
+echo "#### INSTALLING BOOTLOADER..."
+/usr/bin/arch-chroot /mnt bootctl install
 genfstab -U /mnt >> /mnt/etc/fstab
 
-FILE="/mnt/boot/loader/loader.conf"
-
 echo "default arch.conf" > /mnt/boot/loader/loader.conf
-
 FILE="/mnt/boot/loader/entries/arch.conf"
 UUID=$(blkid | grep root | cut -d '"' -f 2)
-
 echo "title   Arch Linux" >> "$FILE"
 echo "linux   /vmlinuz-linux" >> "$FILE"
 echo "initrd  /intel-ucode.img" >> "$FILE"
 echo "initrd  /initramfs-linux.img" >> "$FILE"
 echo "options root=/dev/vg0/lv-root rw" >> "$FILE"
 
-echo "root:packer" | chpasswd --root /mnt
+echo ">>>> UPDATING MIRRORLIST"
+curl -s "https://archlinux.org/mirrorlist/?${COUNTRY}&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' | /usr/bin/arch-chroot /mnt rankmirrors -n 5 - > /mnt/etc/pacman.d/mirrorlist
 
+echo ">>>> SETTING ROOT PASSWORD..."
+echo "root:$PASSWORD" | chpasswd --root /mnt
+
+echo ">>>> INSTALLATION COMPLETE, REBOOTING..."
+sleep 3
 /sbin/reboot

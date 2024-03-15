@@ -131,6 +131,8 @@ source "proxmox-iso" "arch" {
 	cpu_type = var.cpu_type
 	qemu_agent = true
 	bios = "ovmf"
+	machine = "q35"
+	
 	efi_config {
 		efi_storage_pool = var.storage_pool
 	}

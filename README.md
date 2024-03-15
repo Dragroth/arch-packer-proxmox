@@ -9,4 +9,4 @@ I wanted to create base Arch image which could be used as a developer server. Th
 4. Export environment variables based on the 'secrets_template' file (you can use direnv)
 5. Edit variables.pkvars.hcl file
 6. Run `packer build -var-file=variables.pkvars.hcl .`
-Packer will now create a VM, install it and then make it a template. You can then clone the template (manually or even better using Terraform) and initalize it using cloud-init.
+Packer will now create a VM, install it and then make it a template. You can then clone the template (manually or even better using Terraform) and initalize it using cloud-init. The template has root account disabled and by default doesn't create any user, so be sure to create one using cloud-init.

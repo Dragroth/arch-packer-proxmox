@@ -181,6 +181,16 @@ build {
 	name = "arch"
 	sources = ["source.proxmox-iso.arch"]
 
+	provisioner "file" {
+		destination = "/etc/cloud/cloud.cfg"
+		source = "files/cloud.cfg"
+	}
+		
+	provisioner "file" {
+		destination = "/etc/cloud/99-pve.cfg"
+		source = "files/99-pve.cfg"
+	}
+
 	provisioner "shell" {
 		inline = [
 			"rm /etc/ssh/ssh_host_*",
@@ -190,17 +200,8 @@ build {
 			"timedatectl set-timezone ${var.timezone}",
 			"cloud-init clean",
 			"/usr/bin/pacman -Scc --noconfirm",
+			"usermod -p '!' root"
 			"sync"
 		]
-	}
-
-	provisioner "file" {
-		destination = "/etc/cloud/cloud.cfg"
-		source = "files/cloud.cfg"
-	}
-		
-	provisioner "file" {
-		destination = "/etc/cloud/99-pve.cfg"
-		source = "files/99-pve.cfg"
 	}
 }

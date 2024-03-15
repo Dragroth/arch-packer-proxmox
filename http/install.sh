@@ -66,11 +66,11 @@ echo ">>>> ENABLING SERVICES..."
 
 echo ">>>> ALLOWING TEMPORARY ROOT LOGIN..."
 /usr/bin/arch-chroot /mnt sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
+echo "root:$PASSWORD" | chpasswd --root /mnt
 
-echo "#### INSTALLING BOOTLOADER..."
+echo ">>>> INSTALLING BOOTLOADER..."
 /usr/bin/arch-chroot /mnt bootctl install
 genfstab -U /mnt >> /mnt/etc/fstab
-
 echo "default arch.conf" > /mnt/boot/loader/loader.conf
 FILE="/mnt/boot/loader/entries/arch.conf"
 UUID=$(blkid | grep root | cut -d '"' -f 2)
@@ -80,8 +80,6 @@ echo "initrd  /intel-ucode.img" >> "$FILE"
 echo "initrd  /initramfs-linux.img" >> "$FILE"
 echo "options root=/dev/vg0/lv-root rw" >> "$FILE"
 
-echo ">>>> SETTING ROOT PASSWORD..."
-echo "root:$PASSWORD" | chpasswd --root /mnt
 
 echo ">>>> INSTALLATION COMPLETE, REBOOTING..."
 sleep 3
